@@ -179,6 +179,7 @@ class Query(object):
             .color(color)
             .alpha(0.4)
             .render()
+            .mode("queue")
             .shadows()
             .brushable()  // enable brushing
             .on('brush', brushListener);
@@ -191,7 +192,28 @@ class Query(object):
 
         return js
 
-            
+    def getSlick(self, graphid):
+
+        js = '''
+
+        var xtkdiv = $('<div id="%s" class="parcoords" style="width:1500px;height:500px"></div>');
+        xtkdiv.css('background-color','#f00');
+        element.append(xtkdiv);
+
+
+        var griddiv = $('<div id="grid" ></div>');
+        
+        griddiv.css('background-color','#a00');
+        element.append(griddiv);
+        
+        var pagerdiv = $('<div id="pager" ></div>');
+        element.append(pagerdiv);
+        pagerdiv.css('background-color','#60');
+
+
+        });''' % (graphid)
+
+        return js
 
 
     # def convertToArray(self, arrayToConvert):
