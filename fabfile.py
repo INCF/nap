@@ -136,13 +136,12 @@ def nap():
 
 		_notebook()
 		
-		with cd('ipynb'):
-			# get the most recent version, or clone to directory
-			if exists('pmip'):
-				with cd('pmip'):
-					run('git pull --rebase')
-			else:
-				run('git clone git@github.com:INCF/nap.git')				
+		# get the most recent version, or clone to directory
+		if exists('nap'):
+			with cd('nap'):
+				run('git pull --rebase')
+		else:
+			run('git clone git@github.com:INCF/nap.git')				
 
 
 def mountstatus():
@@ -223,7 +222,7 @@ def _base():
 		
 		# update existing tools
 		run("sudo apt-get -y update", pty = True)
-		run("sudo apt-get -y upgrade", pty = True)		
+		# run("sudo apt-get -y upgrade", pty = True)		
 		
 		# install build and CVS tools
 		packagelist = ' '.join(['git-core', 'mercurial', 'subversion', 'unzip', 'build-essential', 'g++', 'libav-tools', 'uuid-dev', 'libfreetype6-dev','libpng12-dev'])
