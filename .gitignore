@@ -2,4 +2,6 @@
 .git_ignore
 *.ini
 id_rsa*
-
+*.pial
+*.vtk
+*.tmp
