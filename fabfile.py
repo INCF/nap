@@ -80,7 +80,7 @@ def _create(size):
 		conn = ec2.EC2Connection(aws_access_key_id, aws_secret_access_key)
 		
 		time.sleep(1)
-		reservation = conn.run_instances(nitrc_ce_ami, instance_type=size, placement='us-east-1d', key_name='ec2-keypair')
+		reservation = conn.run_instances(precise_12_04_2, instance_type=size, placement='us-east-1d', key_name='ec2-keypair')
 		time.sleep(1)
 		instance = reservation.instances[0]
 		time.sleep(1)
@@ -124,6 +124,7 @@ def install():
 
 	with settings(warn_only=True):
 
+		_enableNeuroDebian()
 		_base()
 		_provision()
 		_externals()
@@ -142,6 +143,9 @@ def nap():
 				run('git pull --rebase')
 		else:
 			run('git clone git@github.com:INCF/nap.git')				
+			run('git config --global user.name "richstoner"')
+			run('git config --global user.email "stonerri@gmail.com"')
+
 
 
 def mountstatus():
@@ -249,6 +253,16 @@ def _provision():
 
 
 
+# Adds neurodebian support to the instance
+def _enableNeuroDebian():
+    '''[create] Configures the ubuntu base to use the neurodebian repository (10.04LTS)'''
+    with settings(warn_only=True):
+            run('sudo apt-key adv --recv-keys --keyserver pgp.mit.edu 2649A5A9')
+            run('wget -O- http://neuro.debian.net/lists/precise.us-nh | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list')
+
+
+
+
 def _externals():
 	'''[create] some external dependencies'''
 	with settings(warn_only=True):
@@ -288,14 +302,12 @@ def _notebook():
 		sudo('chmod 0600 .ssh/id_rsa')
 		sudo('chmod 0600 .ssh/id_rsa.pub')
 
-		if exists('ipynb'):
-			with cd('ipynb'):
-				run('git pull --rebase')
-		else:
-			run('git clone git@github.com:richstoner/ipynb.git')
-			run('git config --global user.name "richstoner"')
-			run('git config --global user.email "stonerri@gmail.com"')
-
+		# if exists('ipynb'):
+		# 	with cd('ipynb'):
+		# 		run('git pull --rebase')
+		# else:
+		# 	run('git clone git@github.com:richstoner/ipynb.git')
+			
 
 		sudo('easy_install readline')
 		sudo('apt-get install -y libfreetype6-dev libpng12-dev python-matplotlib')
@@ -315,6 +327,7 @@ def _notebook():
 		run('ipython profile create nbserver')
 		run("rm -rvf ~/.ipython/profile_nbserver")
 		put('profile_nbserver.zip', '.ipython/profile_nbserver.zip')
+
 		with cd('.ipython'):
 			
 			run('unzip profile_nbserver.zip')		
