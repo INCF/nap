@@ -104,6 +104,39 @@ class Query(object):
         result = session.post(self.endpoint, data=data)
         return result.json()['results']['bindings']
 
+
+    def getFileURLforFile(self, filelocation):
+
+        import requests
+        resolvestring = '''http://computor.mit.edu:10101/file?file_uri=%s''' % filelocation
+        r = requests.get(resolvestring)
+        return r.json()
+
+
+
+    def getXTKViewForSubject(self, subject_id):
+        session = requests.Session()
+
+        qstring = '''
+            PREFIX fs: <http://surfer.nmr.mgh.harvard.edu/fswiki/#> 
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#> 
+            PREFIX nidm: <http://nidm.nidash.org/#>
+            PREFIX prov: <http://www.w3.org/ns/prov#>
+
+            select distinct ?id ?file where {
+                            ?c1 nidm:annotation "adhd200"^^xsd:string .
+                            ?c1 fs:subject_id "%s"^^<http://www.w3.org/2001/XMLSchema#string> .
+                            ?c1 prov:hadMember ?e .
+                            ?e  fs:hemisphere "left"^^xsd:string .
+                            ?e  nidm:file ?file .
+                            FILTER regex(?file, "surf/.h.pial")
+            }
+        ''' % subject_id
+
+        session.headers = {'Accept':self._sparqlJSON} # HTML from SELECT queries
+        data = {'query': qstring}
+        result = session.post(self.endpoint, data=data)
+        return result.json()['results']['bindings']
         
     def getBoundsFromData(self, data):
         import numpy as np
