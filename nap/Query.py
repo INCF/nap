@@ -12,28 +12,23 @@ class Query(object):
     _rdfN3 = 'text/rdf+n3';
     _Html = 'text/html';
 
+
     """docstring foResourcme"""
 
-    def __init__(self, _endpoint=''):
+    def __init__(self, _endpoint='', _defaultIRI='http://adhd200.gablab.mit.edu'):
 
         self.endpoint = _endpoint
         self.query = ''
-
-        #static strings 
-        # self.API_listOfSpecimens = '''http://api.brain-map.org/api/v2/data/query.json?criteria=model::Specimen,rma::criteria,donor(products[abbreviation$eqHumanASD]),rma::options[num_rows$eq100]'''
+        self.defaultIRI = _defaultIRI
 
         print 'Initialized as %s resource' % (self.endpoint)
-
-        #import SectionImage        
-        #self.sectionImage = SectionImage.SectionImage('test')
-
-
 
     def listAllSubjectIDs(self):
         session = requests.Session()
         #session.auth = HTTPDigestAuth(username, password)
 
         qstring = '''
+
             PREFIX fs: <http://surfer.nmr.mgh.harvard.edu/fswiki/#>
             PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
             PREFIX nidm: <http://nidm.nidash.org/#>
@@ -51,10 +46,75 @@ class Query(object):
         return result.json()['results']['bindings']
     
 
+
+    def listTypesInGraph(self):
+        session = requests.Session()
+        #session.auth = HTTPDigestAuth(username, password)
+
+        qstring = '''
+            
+            PREFIX fs: <http://surfer.nmr.mgh.harvard.edu/fswiki/#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            PREFIX nidm: <http://nidm.nidash.org/#>
+            PREFIX prov: <http://www.w3.org/ns/prov#>
+
+            select distinct ?Concept where { [] a ?Concept. filter regex(?Concept, "http://surfer.nmr.mgh.harvard.edu/fswiki") } 
+            '''
+
+        session.headers = {'Accept':self._sparqlJSON} # HTML from SELECT queries
+        data = {'query': qstring, 'default-graph-uri': self.defaultIRI } 
+
+        result = session.post(self.endpoint, data=data)
+        # print result.json()['results']['bindings']
+
+        offset = len('http://surfer.nmr.mgh.harvard.edu/fswiki/#')
+
+        tags = []
+        for concept in result.json()['results']['bindings']:
+            v = concept['Concept']['value'][offset:]
+            tags.append(v)
+
+        return tags
+
+
+
+
+    def listPredicatesInGraph(self):
+        session = requests.Session()
+
+        qstring = '''
+            
+            PREFIX fs: <http://surfer.nmr.mgh.harvard.edu/fswiki/#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            PREFIX nidm: <http://nidm.nidash.org/#>
+            PREFIX prov: <http://www.w3.org/ns/prov#>
+
+            select distinct ?p where { ?s ?p ?o. filter regex(?p, "http://surfer.nmr.mgh.harvard.edu/fswiki") } 
+            '''
+
+        session.headers = {'Accept':self._sparqlJSON} # HTML from SELECT queries
+        data = {'query': qstring, 'default-graph-uri': self.defaultIRI } 
+
+        result = session.post(self.endpoint, data=data)
+        # print result.json()['results']['bindings']
+
+        offset = len('http://surfer.nmr.mgh.harvard.edu/fswiki/#')
+
+        tags = []
+        for concept in result.json()['results']['bindings']:
+            v = concept['p']['value'][offset:]
+            tags.append(v)
+
+        return tags
+
+
+        # return result.json()['results']['bindings']
+
     def getSubjectDetails(self, subject_id):
         session = requests.Session()
 
         qstring = '''
+
         PREFIX fs: <http://surfer.nmr.mgh.harvard.edu/fswiki/#>
         PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
         PREFIX nidm: <http://nidm.nidash.org/#>
@@ -103,6 +163,41 @@ class Query(object):
         data = {'query': qstring}
         result = session.post(self.endpoint, data=data)
         return result.json()['results']['bindings']
+
+
+
+    def buildQueryForFiltered(self, concept_dict, predicate_dict):
+        
+        session = requests.Session()
+        qstring = '''
+            PREFIX fs: <http://surfer.nmr.mgh.harvard.edu/fswiki/#>
+            PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+            PREFIX nidm: <http://nidm.nidash.org/#>
+            PREFIX prov: <http://www.w3.org/ns/prov#>
+
+            select distinct $id $structure $volume $hemi where {
+                ?c1 nidm:annotation "adhd200"^^xsd:string .
+                ?c1 fs:subject_id ?id .
+                ?c1 prov:hadMember ?f .
+                ?f fs:hemisphere ?hemi .
+                ?c prov:wasDerivedFrom ?f .
+                ?c prov:hadMember ?s .
+                ?s a fs:GrayVol .
+                ?s fs:structure ?structure .
+                ?s fs:value ?volume .
+                FILTER regex(str(?structure), "%s")
+            }
+        ''' % structure
+
+        session.headers = {'Accept':self._sparqlJSON} # HTML from SELECT queries
+        data = {'query': qstring}
+        result = session.post(self.endpoint, data=data)
+        return result.json()['results']['bindings']
+
+
+
+
+
 
 
     def getFileURLforFile(self, filelocation):

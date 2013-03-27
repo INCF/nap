@@ -38,7 +38,7 @@ def last():
 
 
 def printssh():
-	print 'ssh -i ~/.ssh/ec2-keypair ubuntu@%s' % (env.host_string)
+	print 'ssh -i ~/.ssh/%s ubuntu@%s' % (ec2keypairname, env.host_string)
 	local('echo "ssh -i ~/.ssh/ec2-keypair ubuntu@%s" | pbcopy ' % (env.host_string))
 
 def printhttp():
@@ -56,6 +56,7 @@ def terminate():
 
 def test():
 	run('uname -a')
+	run('lsb_release -a')
 
 def createXL():
 	_create('m3.xlarge')
@@ -80,7 +81,7 @@ def _create(size):
 		conn = ec2.EC2Connection(aws_access_key_id, aws_secret_access_key)
 		
 		time.sleep(1)
-		reservation = conn.run_instances(precise_12_04_2, instance_type=size, placement='us-east-1d', key_name='ec2-keypair')
+		reservation = conn.run_instances(nitrc_ce_ami, instance_type=size, placement='us-east-1d', key_name=ec2keypairname, security_groups=['irods-web', 'default'])
 		time.sleep(1)
 		instance = reservation.instances[0]
 		time.sleep(1)
@@ -124,7 +125,7 @@ def install():
 
 	with settings(warn_only=True):
 
-		_enableNeuroDebian()
+		# _enableNeuroDebian()
 		_base()
 		_provision()
 		_externals()
@@ -219,11 +220,12 @@ def unmountebs():
 
 
 
-
 def _base():
 	'''[create] Basic packages for building, version control'''
 	with settings(warn_only=True):
-		
+
+		sudo('service apache2 stop')
+
 		# update existing tools
 		run("sudo apt-get -y update", pty = True)
 		# run("sudo apt-get -y upgrade", pty = True)		
@@ -241,6 +243,9 @@ def _base():
 		for each_package in packagelist: 
 			print each_package
 			run('sudo pip install %s' % each_package, pty = True)
+
+
+
 
 
 
@@ -281,9 +286,9 @@ def _externals():
 			sudo('pip install -U scipy')
 			sudo('pip install git+git://github.com/scikit-image/scikit-image.git')
 
-			run('wget http://sourceforge.net/projects/fiji-bi/files/fiji/Madison/fiji-linux64-20110307.tar.bz2/download')
-			run('mv download fiji.tar.bz2')
-			run('tar xvjf fiji.tar.bz2')
+			# run('wget http://sourceforge.net/projects/fiji-bi/files/fiji/Madison/fiji-linux64-20110307.tar.bz2/download')
+			# run('mv download fiji.tar.bz2')
+			# run('tar xvjf fiji.tar.bz2')
 
 			# run('wget http://sourceforge.net/projects/itk/files/itk/3.20/InsightToolkit-3.20.1.tar.gz/download')
 			# run('mv download itk32.tar.gz')
@@ -320,18 +325,18 @@ def _notebook():
 
 		run('ipython profile create default')
 
-		put('install_mathjax.py')
-		sudo('ipython install_mathjax.py')
-		run('rm install_mathjax.py')
+		# put('install_mathjax.py')
+		# sudo('ipython install_mathjax.py')
+		# run('rm install_mathjax.py')
 
-		run('ipython profile create nbserver')
-		run("rm -rvf ~/.ipython/profile_nbserver")
-		put('profile_nbserver.zip', '.ipython/profile_nbserver.zip')
+		# run('ipython profile create nbserver')
+		# run("rm -rvf ~/.ipython/profile_nbserver")
+		# put('profile_nbserver.zip', '.ipython/profile_nbserver.zip')
 
-		with cd('.ipython'):
+		# with cd('.ipython'):
 			
-			run('unzip profile_nbserver.zip')		
-			run('rm profile_nbserver.zip')
+		# 	run('unzip profile_nbserver.zip')		
+		# 	run('rm profile_nbserver.zip')
 
 
 		put('supervisord.conf.ipython')
